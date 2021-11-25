@@ -37,7 +37,7 @@ https.get(linePackPath, function(response) {
     response.pipe(fs.createWriteStream("./temp/stickerpack.zip")).on('close', function(){
         console.log('downloaded');
         var fileSizeInBytes = (fs.statSync("./temp/stickerpack.zip")).size
-        console.log(fileSizeInBytes+'B');
+        console.log('size: '+fileSizeInBytes+' bytes');
         if(fileSizeInBytes<11111){
             // static
             console.log('Animation package not found, downloading static package')
