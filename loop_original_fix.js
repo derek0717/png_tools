@@ -3,7 +3,7 @@ const path = require('path');
 const UPNG = require('@pdf-lib/upng').default;
 
 const inputPath = "./unzipped/stickerpack/animation@2x"
-const outputPath = "./output"
+const outputPath = "./loop_fixed"
 
 let stickerFileName = process.argv[2];
 
@@ -31,14 +31,6 @@ fs.readdir(inputPath, function (err, files) {
     const delayArr = imgObj.frames.map(value=>{
         return value.delay
     });
-
-    let delayPostfix = '';
-    if(false){
-        // update delayArr to add to last frame
-        delayArr[delayArr.length-1] = (delayArr.reduce((acc,dis)=>(acc+dis)));
-        delayPostfix = '_'+(delayArr[delayArr.length-1])
-        console.log(JSON.stringify(delayArr))
-    }
 
     let img = UPNG.toRGBA8(imgObj);
     function getSquareFrame(originalFrame){
@@ -89,8 +81,8 @@ fs.readdir(inputPath, function (err, files) {
         return getSquareFrame(frame)
     });
 
+    let loopPostfix = '_loop'+(imgObj.tabs.acTL.num_plays||0);
     console.log('loop: '+imgObj.tabs.acTL.num_plays)
-
     let tabs={
         "loop": imgObj.tabs.acTL.num_plays || 0
     }
@@ -129,7 +121,7 @@ fs.readdir(inputPath, function (err, files) {
         }
     }
 
-    let outputFileName = stickerFileName.split('.')[0]+delayPostfix+'.'+stickerFileName.split('.')[1];
+    let outputFileName = stickerFileName.split('.')[0]+loopPostfix+'.'+stickerFileName.split('.')[1];
 
     let pngOut = fs.createWriteStream(path.join(outputPath, outputFileName));
     // will overwrite file with same filename

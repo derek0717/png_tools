@@ -81,4 +81,6 @@ node_modules
 #
 .env
 output/*
-unzipped/
+unzipped/*
+loop_fixed/*
+frame_fixed/*
