@@ -80,7 +80,4 @@ node_modules
 
 #
 .env
-output/*
-unzipped/*
-loop_fixed/*
-frame_fixed/*
+_output

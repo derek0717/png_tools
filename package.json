@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "node --experimental-modules app2.js"
+    "dev": "node --experimental-modules app2.js",
+    "fix": "node frame_fix.js"
   },
   "keywords": [],
   "author": "",

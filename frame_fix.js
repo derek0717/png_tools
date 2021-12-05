@@ -1,118 +1,122 @@
+/* grab filename from param input, go to output folder, add delay to end frame, replace file */
+/* node frame_fix 14176479/372824145@2x.png */
+/* node frame_fix.js 1416812/16007328@2x.png [0,300,100,700,100,100,100,100,100,100,1500] */
+/* if value in array is 0, the frame is removed */
+/* node frame_fix.js 111/222@2x.png [100,100,100, 100] [0, 1, 2, 2] */
+/* add frame number to remove/rearrange/duplicate frames */
+
 const fs = require('fs')
 const path = require('path');
 const UPNG = require('@pdf-lib/upng').default;
 
-const inputPath = "./unzipped/stickerpack/animation@2x"
-const outputPath = "./frame_fixed"
+let stickerPath = process.argv[2];
+let delayArrString = process.argv[3];
+let frameArrString = process.argv[4];
 
-let stickerFileName = process.argv[2];
 
-if(!stickerFileName.match(/^.*\.png$/)) {
-    console.log(stickerFileName+' not png. skipping');
+let delayArrInput = null;
+
+if(delayArrString) {
+    delayArrInput = eval(delayArrString);
+    if (!Array.isArray(delayArrInput)){
+        console.log("delay array at argv[3] is not an array. skipped. ");
+        delayArrInput = null;
+    } else {
+        delayArrInput = delayArrInput.map(val=>parseInt(val));
+    }
+}
+let frameArrInput = null;
+
+if(frameArrString) {
+    frameArrInput = eval(frameArrString);
+    if (!Array.isArray(frameArrInput)){
+        console.log("frame array at argv[4] is not an array. skipped. ");
+        frameArrInput = null;
+    } else {
+        frameArrInput = frameArrInput.map(val=>parseInt(val));
+    }
+}
+
+if(!stickerPath.match(/^.*\.png$/)) {
+    console.log(stickerPath+' not png. skipping');
     return;
 }
 
-// init folders
-[ outputPath ].forEach(function(path){
-    if (!fs.existsSync(path)){
-        fs.mkdirSync(path);
-    }
-});
+const inputBasePath = './_output';
+const outputPath = './_output';
 
-fs.readdir(inputPath, function (err, files) {
+fs.readdir(inputBasePath, function (err, files) {
     if (err) {
         console.error("Could not list input directory.", err);
         throw err;
     }
-    let imgBuffer = fs.readFileSync(path.join(inputPath, stickerFileName)).buffer;
+    let imgBuffer = fs.readFileSync(path.join(inputBasePath, stickerPath)).buffer;
     const imgObj = UPNG.decode(imgBuffer);
     const originalWidth=imgObj.width,
         originalHeight=imgObj.height;
-    const delayArr = imgObj.frames.map(value=>{
+    const readDelayArr = imgObj.frames.map(value=>{
         return value.delay
     });
 
     let delayPostfix = '';
-    // update delayArr to add to last frame
-    delayArr[delayArr.length-1] = (delayArr.reduce((acc,dis)=>(acc+dis)));
-    delayPostfix = '_'+(delayArr[delayArr.length-1])
-    console.log(JSON.stringify(delayArr))
 
+    let delayArr = readDelayArr;
+
+    if(delayArrInput){
+        delayArr = delayArrInput;
+        delayPostfix = '_custom'
+    }else{
+        // update delayArr to add to last frame
+        delayArr[delayArr.length-1] = Math.min(700,(delayArr.reduce((acc,dis)=>(acc+dis))));
+        delayPostfix = '_'+(delayArr[delayArr.length-1])
+    }
 
     let img = UPNG.toRGBA8(imgObj);
-    function getSquareFrame(originalFrame){
-        if(originalWidth==originalHeight){
-            // already a square
-            return originalFrame;
-        }
-        const pixel = new Uint8Array([255,255,255,0]);
-        let outputImageArr;
-        if(originalWidth > originalHeight){
-            // add top and bottom
-            outputImageArr = new Uint8Array(originalWidth * originalWidth * 4);
-            let topEmptyCount = Math.floor((originalWidth - originalHeight)/2),
-                botEmptyCount = originalWidth - originalHeight - topEmptyCount;
-            let emptyRow = new Uint8Array(originalWidth * 4)
-            for(let i=0; i<(originalWidth * topEmptyCount); i++){
-                outputImageArr.set(pixel, i * 4);
-            }
-            outputImageArr.set(Buffer.from(originalFrame), (originalWidth * topEmptyCount * 4));
-            for(let i=0; i<(originalWidth * botEmptyCount); i++){
-                outputImageArr.set(pixel, ((originalWidth * originalWidth)-i - 1) * 4);
-            }
 
-        } else {
-            // add to left and right side
-            outputImageArr = new Uint8Array(originalHeight * originalHeight * 4);
-            let leftEmptyCount = Math.floor((originalHeight-originalWidth)/2),
-                rightEmptyCount = originalHeight - originalWidth - leftEmptyCount;
-            const originalArr = Buffer.from(originalFrame);
-            let leftEmpty = new Uint8Array(leftEmptyCount * 4);
-            for(let i=0; i<leftEmptyCount; i++){
-                leftEmpty.set(pixel, i * 4);
-            }
-            let rightEmpty = new Uint8Array(rightEmptyCount * 4);
-            for(let i=0; i<rightEmptyCount; i++){
-                rightEmpty.set(pixel, i * 4);
-            }
-            for(let i=0; i<originalHeight; i++){
-                const originalRow = originalArr.subarray(originalWidth * i * 4, originalWidth * (i + 1) * 4);
-                outputImageArr.set(leftEmpty, i * originalHeight * 4);
-                outputImageArr.set(originalRow, (i * originalHeight + leftEmptyCount) * 4);
-                outputImageArr.set(rightEmpty, (i * originalHeight + leftEmptyCount + originalWidth) * 4);
-            }
-        }
-        return outputImageArr.buffer;
+    if(frameArrInput){
+        let newImg = [];
+        frameArrInput.forEach((input,index)=>{
+            newImg[index] = img[input];
+        })
+        img = newImg;
     }
-    let frames = img.map(frame=>{
-        return getSquareFrame(frame)
-    });
 
-    let imageEncoded = UPNG.encode(frames,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),0,delayArr);
+    for(let i=(delayArr.length-1);i>-1;i--){
+        if(delayArr[i]===0){
+            img[i]='remove';
+            delayArr[i]='remove'
+        }
+    }
+
+    img=img.filter(item=>(item!=='remove'))
+    delayArr=delayArr.filter(item=>(item!=='remove'))
+    console.log(JSON.stringify(delayArr))
+
+    let imageEncoded = UPNG.encode(img,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),0,delayArr);
     let buffer = Buffer.from( imageEncoded )
     let sizePostfix='';
     if(buffer.length>(1024*300)){
-        imageEncoded = UPNG.encode(frames,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),256,delayArr);
+        imageEncoded = UPNG.encode(img,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),256,delayArr);
         buffer = Buffer.from( imageEncoded )
         sizePostfix='*';
         if(buffer.length>(1024*300)){
-            imageEncoded = UPNG.encode(frames,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),128,delayArr);
+            imageEncoded = UPNG.encode(img,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),128,delayArr);
             buffer = Buffer.from( imageEncoded )
             sizePostfix='**';
             if(buffer.length>(1024*300)){
-                imageEncoded = UPNG.encode(frames,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),64,delayArr);
+                imageEncoded = UPNG.encode(img,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),64,delayArr);
                 buffer = Buffer.from( imageEncoded )
                 sizePostfix='***';
                 if(buffer.length>(1024*300)){
-                    imageEncoded = UPNG.encode(frames,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),32,delayArr);
+                    imageEncoded = UPNG.encode(img,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),32,delayArr);
                     buffer = Buffer.from( imageEncoded )
                     sizePostfix='****';
                     if(buffer.length>(1024*300)){
-                        imageEncoded = UPNG.encode(frames,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),16,delayArr);
+                        imageEncoded = UPNG.encode(img,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),16,delayArr);
                         buffer = Buffer.from( imageEncoded )
                         sizePostfix='*****';
                         if(buffer.length>(1024*300)){
-                            imageEncoded = UPNG.encode(frames,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),8,delayArr);
+                            imageEncoded = UPNG.encode(img,Math.max(originalWidth,originalHeight),Math.max(originalWidth,originalHeight),8,delayArr);
                             buffer = Buffer.from( imageEncoded )
                             sizePostfix='***** *';
                         }
@@ -122,7 +126,7 @@ fs.readdir(inputPath, function (err, files) {
         }
     }
 
-    let outputFileName = stickerFileName.split('.')[0]+delayPostfix+'.'+stickerFileName.split('.')[1];
+    let outputFileName = stickerPath.split('.')[0]+delayPostfix+'.'+stickerPath.split('.')[1];
 
     let pngOut = fs.createWriteStream(path.join(outputPath, outputFileName));
     // will overwrite file with same filename

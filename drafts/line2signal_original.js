@@ -1,93 +1,72 @@
-/* downloads, unzips and processes stickers to square, save in output folder */
-/* node line2signal 16361450 */
-
 const fs = require('fs')
 const https = require('https')
 const path = require('path');
 const UPNG = require('@pdf-lib/upng').default;
 const AdmZip = require('adm-zip');
 
+var outputPath = "output";
+
 let linePackId = process.argv[2];
 let dynamicType = process.argv[3] || false;
 if(!linePackId) {console.log('no Line sticker pack ID'); return;}
-
-const linePackRemotePath = 'https://stickershop.line-scdn.net/stickershop/v1/product/'+linePackId+'/iphone/stickerpack@2x.zip';
-const lineStaticPackRemotePath = 'https://stickershop.line-scdn.net/stickershop/v1/product/'+linePackId+'/iphone/stickers@2x.zip';
-
-const outputPath = './_output',
-    downloadsPath = outputPath+'/downloads',
-    zipPath = downloadsPath+'/zip',
-    zipPackPath = zipPath+'/'+linePackId,
-    unzippedPath = outputPath+'/unzipped',
-    unzippedPackPath = unzippedPath+'/'+linePackId,
-    unzippedAnimationPath = unzippedPackPath+'/stickerpack',
-    unzippedStaticPath = unzippedPackPath+'/sticker',
-    packOutputPath = outputPath+'/'+linePackId;
-
-let animationInputPath = unzippedAnimationPath+'/animation@2x';
+var unzipPath = "./temp/stickerpack";
+var staticUnzipPath = "./temp/sticker";
+var inputPath = "./temp/stickerpack/animation@2x";
 if(dynamicType=='popup'){
-    /* for popup style line animations */
-    animationInputPath = unzippedAnimationPath+'/popup';
+    inputPath = "./temp/stickerpack/popup";
 }
-const staticInputPath = unzippedStaticPath,
-    animationZipFileName = 'stickerpack.zip',
-    animationZipFileFullPath = zipPackPath+'/'+animationZipFileName,
-    staticZipFileName = 'sticker.zip',
-    staticZipFileFullPath = zipPackPath+'/'+staticZipFileName;
-
-/* init folders */
-function initFolder(path, removeExisting=false){
-    if (!fs.existsSync(path)){
-        fs.mkdirSync(path);
-    } else {
-        if(removeExisting){
-            fs.rmdir(path, { recursive: true },function(){
-                fs.mkdirSync(path);
-            });
-        }
-    }
+var staticInputPath = "./temp/sticker";
+const linePackPath = "https://stickershop.line-scdn.net/stickershop/v1/product/"+linePackId+"/iphone/stickerpack@2x.zip";
+const lineStaticPackPath = "https://stickershop.line-scdn.net/stickershop/v1/product/"+linePackId+"/iphone/stickers@2x.zip";
+if (fs.existsSync('./output')){
+    fs.rmdir('./output', { recursive: true },function(){
+            fs.mkdirSync('./output');
+    });
+} else {
+    fs.mkdirSync('./output');
+}
+if (fs.existsSync('./temp')){
+    fs.rmdir('./temp', { recursive: true },function(){
+        fs.mkdirSync('./temp');
+    });
+} else {
+    fs.mkdirSync('./temp');
 }
 
-[ outputPath, downloadsPath, zipPath, zipPackPath, unzippedPath, unzippedPackPath, packOutputPath ].forEach(function(path){
-    initFolder(path);
-});
-
-console.log('downloading pack '+linePackId+'...');
-
-https.get(linePackRemotePath, function(response) {
-    response.pipe(fs.createWriteStream(animationZipFileFullPath)).on('close', function(){
+https.get(linePackPath, function(response) {
+    response.pipe(fs.createWriteStream("./temp/stickerpack.zip")).on('close', function(){
         console.log('downloaded');
-        var fileSizeInBytes = (fs.statSync(animationZipFileFullPath)).size
+        var fileSizeInBytes = (fs.statSync("./temp/stickerpack.zip")).size
         console.log('size: '+fileSizeInBytes+' bytes');
         if(fileSizeInBytes<11111){
             // static
-            console.log('NOT_FOUND: Animation package with id '+linePackId+' not found, downloading static package');
-            fs.unlinkSync(animationZipFileFullPath)
-            https.get(lineStaticPackRemotePath, function(response) {
-                response.pipe(fs.createWriteStream(staticZipFileFullPath)).on('close', function () {
+            console.log('Animation package not found, downloading static package')
+            fs.unlinkSync("./temp/stickerpack.zip")
+            https.get(lineStaticPackPath, function(response) {
+                response.pipe(fs.createWriteStream("./temp/sticker.zip")).on('close', function () {
                     console.log('downloaded');
-                    const admZipFile = new AdmZip(staticZipFileFullPath);
-                    admZipFile.extractAllTo(unzippedStaticPath, true);
+                    const admZipFile = new AdmZip("./temp/sticker.zip");
+                    admZipFile.extractAllTo(staticUnzipPath, true);
                     console.log('unzipped')
                     fs.readdir(staticInputPath, function (err, files) {
                         if (err) {
-                            console.error('Could not list the directory.', err);
+                            console.error("Could not list the directory.", err);
                             process.exit(1);
                         }
                         files.forEach(function (file, index) {
                             if (!file.match(/^[0-9]*@2x\.png$/)) {
                                 return;
                             }
-                            fs.copyFileSync(path.join(staticInputPath, file), path.join(packOutputPath, file), (err) => {
+                            fs.copyFileSync(path.join(staticInputPath, file), path.join(outputPath, file), (err) => {
                                 if (err) {
-                                    console.error('failed to copy '+file, err);
+                                    console.error("failed to copy "+file, err);
                                     throw err;
                                 }
                             });
                             console.log('copied '+file);
                         });
                         console.log('static all done.');
-                        fs.rmdir(unzippedPackPath, { recursive: true },function(){
+                        fs.rmdir('./temp', { recursive: true },function(){
                             return;
                         })
                     });
@@ -95,12 +74,12 @@ https.get(linePackRemotePath, function(response) {
             });
         } else {
             // animation
-            const admZipFile = new AdmZip(animationZipFileFullPath);
-            admZipFile.extractAllTo(unzippedAnimationPath, true);
+            const admZipFile = new AdmZip("./temp/stickerpack.zip");
+            admZipFile.extractAllTo(unzipPath, true);
             console.log('unzipped')
-            fs.readdir(animationInputPath, function (err, files) {
+            fs.readdir(inputPath, function (err, files) {
                 if (err) {
-                    console.error('Could not list input directory.', err);
+                    console.error("Could not list input directory.", err);
                     throw err;
                 }
                 files.forEach(function (file, index) {
@@ -108,22 +87,13 @@ https.get(linePackRemotePath, function(response) {
                         console.log(file+' not png. skipping');
                         return;
                     }
-                    let imgBuffer = fs.readFileSync(path.join(animationInputPath, file)).buffer;
+                    let imgBuffer = fs.readFileSync(path.join(inputPath, file)).buffer;
                     const imgObj = UPNG.decode(imgBuffer);
                     const originalWidth=imgObj.width,
                         originalHeight=imgObj.height;
                     const delayArr = imgObj.frames.map(value=>{
                         return value.delay
                     });
-
-                    // update delayArr to add to last frame if num_plays=1
-                    let delayPostfix = '';
-                    if (imgObj.tabs.acTL.num_plays<2){
-                        delayArr[delayArr.length-1] = Math.min(700,(delayArr.reduce((acc,dis)=>(acc+dis))));
-                        delayPostfix = ' d';
-                    }
-
-
                     let img = UPNG.toRGBA8(imgObj);
                     function getSquareFrame(originalFrame){
                         if(originalWidth==originalHeight){
@@ -205,18 +175,15 @@ https.get(linePackRemotePath, function(response) {
                             }
                         }
                     }
-                    let pngOut = fs.createWriteStream(path.join(packOutputPath, file));
+                    let pngOut = fs.createWriteStream(path.join(outputPath, file));
                     pngOut.write(buffer);
                     pngOut.end();
-                    console.log('processed '+file+sizePostfix+delayPostfix);
-                })
-                fs.rmdir(zipPackPath, { recursive: true },function(){
-                    console.log('zip folder removed')
-                })
-                fs.rmdir(unzippedPackPath, { recursive: true },function(){
-                    console.log('unzipped folder removed')
+                    console.log('processed '+file+sizePostfix);
                 })
                 console.log('all done.');
+                fs.rmdir('./temp', { recursive: true },function(){
+                    return;
+                })
             });
         }
     });
