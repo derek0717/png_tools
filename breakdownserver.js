@@ -1,3 +1,7 @@
+/*
+* node breakdownserver.js
+* then go to localhost:9000/your/file/path.png
+* */
 const http = require('http');
 const url = require('url');
 const fs = require('fs');
@@ -64,6 +68,7 @@ http.createServer(function (req, res) {
                 })
 
                 res.write('<div>');
+                res.write('<div>'+pathname+'</div>');
                 res.write('<div>'+JSON.stringify(delayArr)+'</div>');
                 res.write('<div>['+countArr.join(',')+']</div>');
                 const imageEncoded1x = UPNG.encode(img,imgObj.width,imgObj.height,0,delayArr);

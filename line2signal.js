@@ -137,7 +137,6 @@ https.get(linePackRemotePath, function(response) {
                             outputImageArr = new Uint8Array(originalWidth * originalWidth * 4);
                             let topEmptyCount = Math.floor((originalWidth - originalHeight)/2),
                                 botEmptyCount = originalWidth - originalHeight - topEmptyCount;
-                            let emptyRow = new Uint8Array(originalWidth * 4)
                             for(let i=0; i<(originalWidth * topEmptyCount); i++){
                                 outputImageArr.set(pixel, i * 4);
                             }
