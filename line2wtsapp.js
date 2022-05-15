@@ -98,6 +98,20 @@ https.get(linePackRemotePath, function(response) {
             const admZipFile = new AdmZip(animationZipFileFullPath);
             admZipFile.extractAllTo(unzippedAnimationPath, true);
             console.log('unzipped')
+
+            let productinfo = JSON.parse(fs.readFileSync(path.join(unzippedAnimationPath,'productinfo.meta')));
+            console.log('----------------------');
+            console.log(productinfo.title.en);
+            console.log(productinfo.author.en);
+            console.log('----------------------');
+
+            fs.copyFileSync(path.join(unzippedAnimationPath, 'tab_on@2x.png'), path.join(packOutputPath, 'tab_on@2x.png'), (err) => {
+                if (err) {
+                    console.error('failed to copy tab_on@2x.png', err);
+                    throw err;
+                }
+            });
+            console.log('copied tab_on');
             fs.readdir(animationInputPath, function (err, files) {
                 if (err) {
                     console.error('Could not list input directory.', err);
@@ -186,6 +200,8 @@ https.get(linePackRemotePath, function(response) {
                     console.log('unzipped folder removed')
                 })
                 console.log('all done.');
+                let absolutePath = path.resolve(packOutputPath);
+                require('child_process').exec('open "'+absolutePath+'"');
             });
         }
     });
