@@ -72,12 +72,12 @@ fs.readdir(inputBasePath, function (err, files) {
     })
     img = newImg;
 
-    if((Buffer.from(newImg[0]).toString('base64'))==(Buffer.from(newImg[newImg.length-1]).toString('base64'))){
-        delayArr.push(minDelay)
-        newImg.push(createFillerFrame(newImg[newImg.length-1]))
-        customPostfix = customPostfix+"L_";
-        frameArr.push(frameArr[frameArr.length-1])
-    }
+    // if((Buffer.from(newImg[0]).toString('base64'))==(Buffer.from(newImg[newImg.length-1]).toString('base64'))){
+    //     delayArr.push(minDelay)
+    //     newImg.push(createFillerFrame(newImg[newImg.length-1]))
+    //     customPostfix = customPostfix+"L_";
+    //     frameArr.push(frameArr[frameArr.length-1])
+    // }
     console.log(JSON.stringify(delayArr));
     console.log(JSON.stringify(frameArr));
     let tabs={
@@ -86,7 +86,7 @@ fs.readdir(inputBasePath, function (err, files) {
     let imageEncoded = UPNG.encode(img,originalWidth,originalHeight,0,delayArr, tabs, null);
     let buffer = Buffer.from( imageEncoded );
 
-    customPostfix = customPostfix+"wtsapp";
+    customPostfix = customPostfix+"wts";
     let outputFileName = stickerPath.split('.')[0]+customPostfix+'.'+stickerPath.split('.')[1];
 
     let pngOut = fs.createWriteStream(path.join(outputPath, outputFileName));

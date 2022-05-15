@@ -97,11 +97,11 @@ fs.readdir(inputBasePath, function (err, files) {
         })
         img = newImg;
 
-        if((Buffer.from(newImg[0]).toString('base64'))==(Buffer.from(newImg[newImg.length-1]).toString('base64'))){
-            console.log('first & last frames are the same. Need to add a frame to prevent frame skip when whatsapp animation ends')
-        } else {
-            console.log('first & last frames NOT same')
-        }
+        // if((Buffer.from(newImg[0]).toString('base64'))==(Buffer.from(newImg[newImg.length-1]).toString('base64'))){
+        //     console.log('first & last frames are the same. Need to add a frame to prevent frame skip when whatsapp animation ends')
+        // } else {
+        //     console.log('first & last frames NOT same')
+        // }
     }
 
     for(let i=(delayArr.length-1);i>-1;i--){
