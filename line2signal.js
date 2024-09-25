@@ -1,5 +1,6 @@
 /* downloads, unzips and processes stickers to square, save in output folder */
 /* node line2signal 16361450 */
+/* FOR EMOJI: node line2signal 66b40bab79287153b51755e9 emoji */
 
 const fs = require('fs')
 const https = require('https')
@@ -12,6 +13,8 @@ let dynamicType = process.argv[3] || false;
 if(!linePackId) {console.log('no Line sticker pack ID'); return;}
 
 const linePackRemotePath = 'https://stickershop.line-scdn.net/stickershop/v1/product/'+linePackId+'/iphone/stickerpack@2x.zip';
+/* ref: https://greasyfork.org/en/scripts/39015-line-sticker-download/code */
+const lineEmojiPackRemotePath = 'https://stickershop.line-scdn.net/sticonshop/v1/'+linePackId+'/sticon/iphone/package_animation.zip';
 const lineStaticPackRemotePath = 'https://stickershop.line-scdn.net/stickershop/v1/product/'+linePackId+'/iphone/stickers@2x.zip';
 
 const outputPath = './_output',
@@ -25,9 +28,13 @@ const outputPath = './_output',
     packOutputPath = outputPath+'/'+linePackId;
 
 let animationInputPath = unzippedAnimationPath+'/animation@2x';
+let remoteDownloadPath = linePackRemotePath;
 if(dynamicType=='popup'){
     /* for popup style line animations */
     animationInputPath = unzippedAnimationPath+'/popup';
+} else if (dynamicType=='emoji'){
+    remoteDownloadPath = lineEmojiPackRemotePath;
+    animationInputPath = unzippedAnimationPath;
 }
 const staticInputPath = unzippedStaticPath,
     animationZipFileName = 'stickerpack.zip',
@@ -54,7 +61,7 @@ function initFolder(path, removeExisting=false){
 
 console.log('downloading pack '+linePackId+'...');
 
-https.get(linePackRemotePath, function(response) {
+https.get(remoteDownloadPath, function(response) {
     response.pipe(fs.createWriteStream(animationZipFileFullPath)).on('close', function(){
         console.log('downloaded');
         var fileSizeInBytes = (fs.statSync(animationZipFileFullPath)).size
@@ -108,6 +115,11 @@ https.get(linePackRemotePath, function(response) {
                         console.log(file+' not png. skipping');
                         return;
                     }
+                    if(file.match(/^.*_key_animation.*$/)) {
+                        console.log(file+' low quality _key_animation. skipping');
+                        return;
+                    }
+
                     let imgBuffer = fs.readFileSync(path.join(animationInputPath, file)).buffer;
                     const imgObj = UPNG.decode(imgBuffer);
                     const originalWidth=imgObj.width,
