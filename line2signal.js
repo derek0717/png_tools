@@ -85,16 +85,16 @@ https.get(remoteDownloadPath, function(response) {
                             if (!file.match(/^[0-9]*@2x\.png$/)) {
                                 return;
                             }
-                            fs.copyFileSync(path.join(staticInputPath, file), path.join(packOutputPath, file), (err) => {
-                                if (err) {
-                                    console.error('failed to copy '+file, err);
-                                    throw err;
-                                }
-                            });
+                            try {
+                                fs.copyFileSync(path.join(staticInputPath, file), path.join(packOutputPath, file));
+                            } catch (e){
+                                console.error('failed to copy ' + file, err);
+                                throw err;
+                            }
                             console.log('copied '+file);
                         });
                         console.log('static all done.');
-                        fs.rmdir(unzippedPackPath, { recursive: true },function(){
+                        fs.rm(unzippedPackPath, { recursive: true },function(){
                             return;
                         })
                     });
