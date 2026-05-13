@@ -1,0 +1,18 @@
+{
+  "name": "webpbreakdown",
+  "version": "1.0.0",
+  "description": "",
+  "main": "webp-breakdown.js",
+  "scripts": {
+    "start": "node webp-breakdown.js"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@jsquash/webp": "^1.5.0",
+    "crc-32": "^1.2.2",
+    "node-fetch": "^3.3.2",
+    "node-webpmux": "^3.2.1",
+    "sharp": "^0.34.5"
+  }
+}
