@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Line → WhatsApp Sticker Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .card {
+            background: white;
+            padding: 24px 28px;
+            border-radius: 10px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            width: 320px;
+        }
+
+        h2 {
+            margin-top: 0;
+            margin-bottom: 16px;
+            font-size: 18px;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        button {
+            width: 100%;
+            padding: 10px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-bottom: 10px;
+            transition: all 0.2s;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #downloadBtn {
+            background: #007aff;
+            color: white;
+        }
+
+        #generateBtn {
+            background: #34c759;
+            color: white;
+        }
+
+        .status {
+            font-size: 13px;
+            color: #555;
+            margin-top: 10px;
+            min-height: 18px;
+        }
+
+        .loading {
+            color: #007aff;
+        }
+
+        .success {
+            color: green;
+        }
+
+        .error {
+            color: red;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h2>Line → WhatsApp</h2>
+
+    <input id="id" placeholder="Line Pack ID" />
+
+    <button id="downloadBtn" onclick="download()">Download</button>
+    <button id="generateBtn" onclick="generate()">Generate</button>
+
+    <div id="status" class="status"></div>
+</div>
+
+<script>
+    const idInput = document.getElementById('id');
+    const downloadBtn = document.getElementById('downloadBtn');
+    const generateBtn = document.getElementById('generateBtn');
+    const statusEl = document.getElementById('status');
+
+
+    function setLoading(isLoading) {
+        idInput.disabled = isLoading;
+        downloadBtn.disabled = isLoading;
+        generateBtn.disabled = isLoading;
+
+        if (isLoading) {
+            statusEl.classList.add('loading');
+        } else {
+            statusEl.classList.remove('loading');
+        }
+    }
+
+    function setStatus(text, type='') {
+        statusEl.className = 'status';   // reset base
+        if (type) statusEl.classList.add(type);
+        statusEl.textContent = text;
+    }
+
+    function getPackId() {
+        const val = idInput.value.trim();
+        if (!val) {
+            setStatus('Please enter Line Pack ID', 'error');
+            return null;
+        }
+        return val;
+    }
+
+    async function download() {
+        const packId = getPackId();
+        if (!packId) return;
+
+        setStatus('Downloading...', 'loading');
+        setLoading(true);
+
+        try {
+            const res = await fetch('/api/download', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ packId })
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                setStatus('Download complete', 'success');
+            } else {
+                setStatus(JSON.stringify(data), 'error');
+            }
+
+        } catch (e) {
+            setStatus('Network error', 'error');
+        }
+
+        setLoading(false);
+    }
+
+    async function generate() {
+        const packId = getPackId();
+        if (!packId) return;
+
+        setStatus('Generating stickers...', 'loading');
+        setLoading(true);
+
+        try {
+            const res = await fetch('/api/generate', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ packId })
+            });
+
+            const data = await res.json();
+
+            if (res.ok && data.result) {
+                setStatus('Generation complete', 'success');
+            } else {
+                setStatus(JSON.stringify(data), 'error');
+            }
+
+        } catch (e) {
+            setStatus('Network error', 'error');
+        }
+
+        setLoading(false);
+    }
+</script>
+
+</body>
+</html>
